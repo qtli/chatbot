@@ -1,4 +1,5 @@
 # Chatbot
+A Neural Conversation Model implemented in PyTorch.
 
 ### Getting Started:
  1. unzip `cornell_movie_dialogs_corpus.zip` in `data/`
