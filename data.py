@@ -23,7 +23,7 @@ GO_TOKEN = '<go>'
 PAD_TOKEN = '<pad>'
 UNK_TOKEN = '<unk>'
 
-VOCAB_SIZE = 10
+VOCAB_SIZE = 20000
 
 
 def get_raw_data():
@@ -158,6 +158,13 @@ def get_seqs(file_name):
 def line_to_seq(line, vocab):
     return [vocab[token] if token in vocab else vocab[UNK_TOKEN] for token in line.split()]
 
+
+def pad_seqs(seqs):
+    max_seq_len = max(len(s) for s in seqs)
+    vocab = load_vocab(VOCAB_FILE_NAME
+                       )
+    padded_seqs = [s + [vocab[PAD_TOKEN]] * (max_seq_len - len(s)) for s in seqs]
+    return padded_seqs
 
 if __name__ == '__main__':
     print 'Getting data...'
