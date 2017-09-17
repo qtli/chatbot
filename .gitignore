@@ -1,5 +1,6 @@
 # Data files
-data/
+data/*
+!data/cornell_movie_dialogs_corpus.zip
 
 # PyCharm
 .idea/
