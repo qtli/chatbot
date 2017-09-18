@@ -24,6 +24,7 @@ PAD_TOKEN = '<pad>'
 UNK_TOKEN = '<unk>'
 
 VOCAB_SIZE = 20000
+MAX_SEQ_LEN = 20
 
 
 def get_raw_data():
@@ -172,6 +173,9 @@ if __name__ == '__main__':
 
     print 'Tokenizing...'
     data = [(tokenize(q), tokenize(a)) for q, a in data]
+
+    print 'Filtering...'
+    data = [(q, a) for q, a in data if len(q) <= MAX_SEQ_LEN and len(a) <= MAX_SEQ_LEN]
 
     print 'Building vocab...'
     vocab = build_vocabulary(data, VOCAB_SIZE)
