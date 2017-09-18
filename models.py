@@ -20,14 +20,14 @@ class Seq2Seq(nn.Module):
         self.encoder = EncoderRNN(vocab_size, hidden_size)
         self.decoder = DecoderRNN(vocab_size, hidden_size)
 
-    def _get_loss(self, batch):
+    def _get_loss(self, batch, inference_only=False):
         answer_lens = [len(example['answer']) for example in batch]
 
         questions = pad_seqs([example['question'] for example in batch])
         answers = pad_seqs([example['answer'] for example in batch])
 
-        questions = Variable(torch.LongTensor(questions)).cuda()
-        answers = Variable(torch.LongTensor(answers)).cuda()
+        questions = Variable(torch.LongTensor(questions), volatile=inference_only).cuda()
+        answers = Variable(torch.LongTensor(answers), volatile=inference_only).cuda()
 
         output = self(questions, answers)
 
@@ -63,7 +63,7 @@ class Seq2Seq(nn.Module):
             train_loss.backward()
             optimizer.step()
 
-            val_loss = self._get_loss(val_batch)
+            val_loss = self._get_loss(val_batch, inference_only=True)
 
             train_losses.append(train_loss.data[0])
             val_losses.append(val_loss.data[0])
