@@ -11,6 +11,6 @@ def plot_loss(train_losses, val_losses):
     plt.show()
 
 
-model = Seq2Seq(VOCAB_SIZE, 256)
+model = Seq2Seq(VOCAB_SIZE, 256).cuda()
 train_losses, val_losses = model.train(iters=1000)
 plot_loss(train_losses, val_losses)

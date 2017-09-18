@@ -26,8 +26,8 @@ class Seq2Seq(nn.Module):
         questions = pad_seqs([example['question'] for example in batch])
         answers = pad_seqs([example['answer'] for example in batch])
 
-        questions = Variable(torch.LongTensor(questions))
-        answers = Variable(torch.LongTensor(answers))
+        questions = Variable(torch.LongTensor(questions)).cuda()
+        answers = Variable(torch.LongTensor(answers)).cuda()
 
         output = self(questions, answers)
 
@@ -88,7 +88,7 @@ class EncoderRNN(nn.Module):
         self.gru = nn.GRU(hidden_size, hidden_size, self.num_layers, batch_first=True)
 
     def init_hidden(self, batch_size):
-        return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size))
+        return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda()
 
     def forward(self, input_seqs):
         input_seqs = self.embedding(input_seqs)
@@ -110,7 +110,7 @@ class DecoderRNN(nn.Module):
         self.softmax = nn.LogSoftmax()
 
     def init_hidden(self, batch_size):
-        return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size))
+        return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda()
 
     @staticmethod
     def create_rnn_input(embedded, thought):
@@ -118,7 +118,7 @@ class DecoderRNN(nn.Module):
         embedded = embedded.permute(1, 0, 2)
 
         seq_len, batch_size, hidden_size = embedded.size()
-        rnn_input = Variable(torch.zeros((seq_len, batch_size, 2 * hidden_size)))
+        rnn_input = Variable(torch.zeros((seq_len, batch_size, 2 * hidden_size))).cuda()
         for i in xrange(seq_len):
             for j in xrange(batch_size):
                 rnn_input[i, j] = torch.cat((embedded[i, j], thought[0, j]))
@@ -127,7 +127,7 @@ class DecoderRNN(nn.Module):
         return rnn_input.permute(1, 0, 2)
 
     def softmax_batch(self, linear_output):
-        result = Variable(torch.zeros(linear_output.size()))
+        result = Variable(torch.zeros(linear_output.size())).cuda()
         batch_size = linear_output.size()[0]
         for i in xrange(batch_size):
             result[i] = self.softmax(linear_output[i])
