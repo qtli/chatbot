@@ -5,9 +5,16 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torch.optim import SGD
 
+from data import EOS_TOKEN
+from data import GO_TOKEN
 from data import TRAIN_FILE_NAME
 from data import VAL_FILE_NAME
+from data import VOCAB_FILE_NAME
+from data import load_vocab
 from data import pad_seqs
+from data import seq_to_tokens
+from data import tokenize
+from data import tokens_to_seq
 from dataset import Dataset
 
 
@@ -16,6 +23,7 @@ class Seq2Seq(nn.Module):
         super(Seq2Seq, self).__init__()
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
+        self.num_layers = 1
 
         self.encoder = EncoderRNN(vocab_size, hidden_size)
         self.decoder = DecoderRNN(vocab_size, hidden_size)
@@ -29,20 +37,19 @@ class Seq2Seq(nn.Module):
         questions = Variable(torch.LongTensor(questions), volatile=inference_only).cuda()
         answers = Variable(torch.LongTensor(answers), volatile=inference_only).cuda()
 
-        output = self(questions, answers)
+        batch_size = len(batch)
+
+        _, encoder_hidden = self.encoder(questions)
+        decoder_output, _ = self.decoder(answers,
+                                         encoder_hidden,
+                                         init_hidden(self.num_layers, batch_size, self.hidden_size))
 
         loss = 0
         loss_fn = torch.nn.NLLLoss()
-        batch_size = len(batch)
         for i in xrange(batch_size):
-            loss += loss_fn(output[i, :answer_lens[i] - 1], answers[i, 1:answer_lens[i]])
+            loss += loss_fn(decoder_output[i, :answer_lens[i] - 1], answers[i, 1:answer_lens[i]])
 
         return loss / batch_size
-
-    def forward(self, input_seqs, target_seqs):
-        _, encoder_hidden = self.encoder(input_seqs)
-        decoder_output, _ = self.decoder(target_seqs, encoder_hidden)
-        return decoder_output
 
     def train(self, lr=1e-3, batch_size=1, iters=7500, print_iters=100):
         optimizer = SGD(self.parameters(), lr=lr)
@@ -76,6 +83,37 @@ class Seq2Seq(nn.Module):
 
         return train_losses, val_losses
 
+    def chat(self):
+        vocab = load_vocab(VOCAB_FILE_NAME)
+        inverted_vocab = {i: w for w, i in vocab.iteritems()}
+
+        batch_size = 1
+        decoder_hidden = init_hidden(self.num_layers, batch_size, self.hidden_size)
+        decoder_output = Variable(torch.LongTensor([tokens_to_seq([GO_TOKEN], vocab)]), volatile=True).cuda()
+
+        while True:
+            question = raw_input('User: ')
+            question = [tokens_to_seq(tokenize(question), vocab)]
+            question = Variable(torch.LongTensor(question), volatile=True).cuda()
+            _, encoder_hidden = self.encoder(question)
+
+            response = []
+
+            eos = False
+            while not eos:
+                decoder_output, decoder_hidden = self.decoder(decoder_output, encoder_hidden, decoder_hidden)
+                top_i = decoder_output[0, 0].data.topk(1)[1][0]
+
+                decoder_output = Variable(torch.LongTensor([[top_i]]), volatile=True).cuda()
+                word = seq_to_tokens([top_i], inverted_vocab)[0]
+
+                if word == EOS_TOKEN:
+                    eos = True
+                else:
+                    response.append(word)
+
+            print 'Chatbot: {}'.format(' '.join(response))
+
 
 class EncoderRNN(nn.Module):
     def __init__(self, vocab_size, hidden_size):
@@ -87,13 +125,10 @@ class EncoderRNN(nn.Module):
         self.embedding = nn.Embedding(vocab_size, hidden_size)
         self.gru = nn.GRU(hidden_size, hidden_size, self.num_layers, batch_first=True)
 
-    def init_hidden(self, batch_size):
-        return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda()
-
     def forward(self, input_seqs):
         input_seqs = self.embedding(input_seqs)
         batch_size = input_seqs.size()[0]
-        output, hidden = self.gru(input_seqs, self.init_hidden(batch_size))
+        output, hidden = self.gru(input_seqs, init_hidden(self.num_layers, batch_size, self.hidden_size))
         return output, hidden
 
 
@@ -108,9 +143,6 @@ class DecoderRNN(nn.Module):
         self.gru = nn.GRU(2 * hidden_size, hidden_size, self.num_layers, batch_first=True)
         self.out = nn.Linear(hidden_size, vocab_size)
         self.softmax = nn.LogSoftmax()
-
-    def init_hidden(self, batch_size):
-        return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda()
 
     @staticmethod
     def create_rnn_input(embedded, thought):
@@ -133,10 +165,13 @@ class DecoderRNN(nn.Module):
             result[i] = self.softmax(linear_output[i])
         return result
 
-    def forward(self, target_seqs, thought):
+    def forward(self, target_seqs, thought, hidden):
         target_seqs = self.embedding(target_seqs)
         rnn_input = self.create_rnn_input(target_seqs, thought)
-        batch_size = target_seqs.size()[0]
-        output, hidden = self.gru(rnn_input, self.init_hidden(batch_size))
+        output, hidden = self.gru(rnn_input, hidden)
         output = self.softmax_batch(self.out(output))
         return output, hidden
+
+
+def init_hidden(num_layers, batch_size, hidden_size):
+    return Variable(torch.zeros(num_layers, batch_size, hidden_size)).cuda()

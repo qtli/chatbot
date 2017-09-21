@@ -144,20 +144,20 @@ def get_seqs(file_name):
 
     seqs = []
     for q, a in data:
-        q_seq = line_to_seq(q, vocab)
-        q_seq.append(vocab[EOS_TOKEN])
+        q = tokens_to_seq(q.split() + [EOS_TOKEN], vocab)
+        a = tokens_to_seq([GO_TOKEN] + a.split() + [EOS_TOKEN], vocab)
 
-        a_seq = [vocab[GO_TOKEN]]
-        a_seq.extend(line_to_seq(a, vocab))
-        a_seq.append(vocab[EOS_TOKEN])
-
-        qa_pair = (q_seq, a_seq)
+        qa_pair = (q, a)
         seqs.append(qa_pair)
     return seqs
 
 
-def line_to_seq(line, vocab):
-    return [vocab[token] if token in vocab else vocab[UNK_TOKEN] for token in line.split()]
+def tokens_to_seq(tokens, vocab):
+    return [vocab[t] if t in vocab else vocab[UNK_TOKEN] for t in tokens]
+
+
+def seq_to_tokens(seq, vocab):
+    return [vocab[s] for s in seq]
 
 
 def pad_seqs(seqs):
@@ -166,6 +166,7 @@ def pad_seqs(seqs):
                        )
     padded_seqs = [s + [vocab[PAD_TOKEN]] * (max_seq_len - len(s)) for s in seqs]
     return padded_seqs
+
 
 if __name__ == '__main__':
     print 'Getting data...'
