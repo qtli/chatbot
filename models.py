@@ -1,21 +1,6 @@
-import time
-
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from torch.optim import SGD
-
-from data import EOS_TOKEN
-from data import GO_TOKEN
-from data import TRAIN_FILE_NAME
-from data import VAL_FILE_NAME
-from data import VOCAB_FILE_NAME
-from data import load_vocab
-from data import pad_seqs
-from data import seq_to_tokens
-from data import tokenize
-from data import tokens_to_seq
-from dataset import Dataset
 
 
 class Seq2Seq(nn.Module):
@@ -27,92 +12,6 @@ class Seq2Seq(nn.Module):
 
         self.encoder = EncoderRNN(vocab_size, hidden_size)
         self.decoder = DecoderRNN(vocab_size, hidden_size)
-
-    def _get_loss(self, batch, inference_only=False):
-        answer_lens = [len(example['answer']) for example in batch]
-
-        questions = pad_seqs([example['question'] for example in batch])
-        answers = pad_seqs([example['answer'] for example in batch])
-
-        questions = Variable(torch.LongTensor(questions), volatile=inference_only).cuda()
-        answers = Variable(torch.LongTensor(answers), volatile=inference_only).cuda()
-
-        batch_size = len(batch)
-
-        _, encoder_hidden = self.encoder(questions)
-        decoder_output, _ = self.decoder(answers,
-                                         encoder_hidden,
-                                         init_hidden(self.num_layers, batch_size, self.hidden_size))
-
-        loss = 0
-        loss_fn = torch.nn.NLLLoss()
-        for i in xrange(batch_size):
-            loss += loss_fn(decoder_output[i, :answer_lens[i] - 1], answers[i, 1:answer_lens[i]])
-
-        return loss / batch_size
-
-    def train(self, lr=1e-3, batch_size=1, iters=7500, print_iters=100):
-        optimizer = SGD(self.parameters(), lr=lr)
-
-        train_losses = []
-        val_losses = []
-
-        train = Dataset(TRAIN_FILE_NAME)
-        val = Dataset(VAL_FILE_NAME)
-
-        start_time = time.time()
-        for i in xrange(1, iters + 1):
-            train_batch = [train.get_random_example() for _ in xrange(batch_size)]
-            val_batch = [val.get_random_example() for _ in xrange(batch_size)]
-
-            train_loss = self._get_loss(train_batch)
-            optimizer.zero_grad()
-            train_loss.backward()
-            optimizer.step()
-
-            val_loss = self._get_loss(val_batch, inference_only=True)
-
-            train_losses.append(train_loss.data[0])
-            val_losses.append(val_loss.data[0])
-
-            if i % print_iters == 0:
-                end_time = time.time()
-                string = 'epoch: {}, iters: {}, train loss: {:.2f}, val loss: {:.2f}, time: {:.2f} s'
-                print string.format(i / len(train), i, train_loss.data[0], val_loss.data[0], end_time - start_time)
-                start_time = time.time()
-
-        return train_losses, val_losses
-
-    def chat(self):
-        vocab = load_vocab(VOCAB_FILE_NAME)
-        inverted_vocab = {i: w for w, i in vocab.iteritems()}
-
-        batch_size = 1
-        decoder_hidden = init_hidden(self.num_layers, batch_size, self.hidden_size)
-        decoder_output = Variable(torch.LongTensor([tokens_to_seq([GO_TOKEN], vocab)]), volatile=True).cuda()
-
-        while True:
-            question = raw_input('User: ')
-            question = [tokens_to_seq(tokenize(question), vocab)]
-            question = Variable(torch.LongTensor(question), volatile=True).cuda()
-            _, encoder_hidden = self.encoder(question)
-
-            response = []
-
-            eos = False
-            while not eos:
-                decoder_output, decoder_hidden = self.decoder(decoder_output, encoder_hidden, decoder_hidden)
-                top_i = decoder_output[0, 0].data.topk(1)[1][0]
-
-                decoder_output = Variable(torch.LongTensor([[top_i]]), volatile=True).cuda()
-                word = seq_to_tokens([top_i], inverted_vocab)[0]
-
-                if word == EOS_TOKEN:
-                    eos = True
-                else:
-                    response.append(word)
-
-            print 'Chatbot: {}'.format(' '.join(response))
 
 
 class EncoderRNN(nn.Module):
