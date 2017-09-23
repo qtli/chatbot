@@ -77,8 +77,10 @@ for i in xrange(1, ITERS + 1):
         avg_train_loss = sum(train_losses[-PRINT_ITERS:]) / PRINT_ITERS
         avg_val_loss = sum(val_losses[-PRINT_ITERS:]) / PRINT_ITERS
 
+        epoch = (BATCH_SIZE * i) / len(train)
+
         string = 'epoch: {}, iters: {}, train loss: {:.2f}, val loss: {:.2f}, time: {:.2f} s'
-        print string.format(i / len(train), i, avg_train_loss, avg_val_loss, end_time - start_time)
+        print string.format(epoch, i, avg_train_loss, avg_val_loss, end_time - start_time)
 
         start_time = time.time()
 
