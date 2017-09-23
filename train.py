@@ -73,8 +73,13 @@ for i in xrange(1, ITERS + 1):
 
     if i % PRINT_ITERS == 0:
         end_time = time.time()
+
+        avg_train_loss = sum(train_losses[-PRINT_ITERS:]) / PRINT_ITERS
+        avg_val_loss = sum(val_losses[-PRINT_ITERS:]) / PRINT_ITERS
+
         string = 'epoch: {}, iters: {}, train loss: {:.2f}, val loss: {:.2f}, time: {:.2f} s'
-        print string.format(i / len(train), i, train_loss.data[0], val_loss.data[0], end_time - start_time)
+        print string.format(i / len(train), i, avg_train_loss, avg_val_loss, end_time - start_time)
+
         start_time = time.time()
 
 plot_loss(train_losses, val_losses)
