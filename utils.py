@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import torch
 from torch.autograd import Variable
 
@@ -10,13 +9,6 @@ from data import seq_to_tokens
 from data import tokenize
 from data import tokens_to_seq
 from models import init_hidden
-
-
-def plot_loss(train_losses, val_losses):
-    plt.plot(train_losses, color='red', label='train')
-    plt.plot(val_losses, color='blue', label='val')
-    plt.legend(loc='upper right', frameon=False)
-    plt.show()
 
 
 def chat(model):
