@@ -9,9 +9,9 @@ from train import train_iters
 RESULTS_PATH = 'results/'
 
 
-def experiment(train, val, batch_size, hidden_size, lr, iters, print_iters):
+def experiment(train, val, batch_size, hidden_size, num_layers, lr, iters, print_iters):
     print 'Building model...'
-    model = Seq2Seq(VOCAB_SIZE, hidden_size).cuda()
+    model = Seq2Seq(VOCAB_SIZE, VOCAB_SIZE, hidden_size, num_layers).cuda()
 
     print 'Training...'
     train_losses, val_losses = train_iters(model, train, val, batch_size, lr, iters, print_iters)

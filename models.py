@@ -4,21 +4,22 @@ from torch.autograd import Variable
 
 
 class Seq2Seq(nn.Module):
-    def __init__(self, vocab_size, hidden_size):
+    def __init__(self, input_vocab_size, output_vocab_size, hidden_size, num_layers):
         super(Seq2Seq, self).__init__()
-        self.vocab_size = vocab_size
+        self.input_vocab_size = input_vocab_size
+        self.output_vocab_size = output_vocab_size
         self.hidden_size = hidden_size
-        self.num_layers = 1
+        self.num_layers = num_layers
 
-        self.encoder = EncoderRNN(vocab_size, hidden_size)
-        self.decoder = DecoderRNN(vocab_size, hidden_size)
+        self.encoder = EncoderRNN(input_vocab_size, hidden_size, num_layers)
+        self.decoder = DecoderRNN(output_vocab_size, hidden_size, num_layers)
 
 
 class EncoderRNN(nn.Module):
-    def __init__(self, vocab_size, hidden_size):
+    def __init__(self, vocab_size, hidden_size, num_layers):
         super(EncoderRNN, self).__init__()
 
-        self.num_layers = 1
+        self.num_layers = num_layers
         self.hidden_size = hidden_size
 
         self.embedding = nn.Embedding(vocab_size, hidden_size)
@@ -32,10 +33,10 @@ class EncoderRNN(nn.Module):
 
 
 class DecoderRNN(nn.Module):
-    def __init__(self, vocab_size, hidden_size):
+    def __init__(self, vocab_size, hidden_size, num_layers):
         super(DecoderRNN, self).__init__()
 
-        self.num_layers = 1
+        self.num_layers = num_layers
         self.hidden_size = hidden_size
 
         self.embedding = nn.Embedding(vocab_size, hidden_size)
