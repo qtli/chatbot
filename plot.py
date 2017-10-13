@@ -4,7 +4,8 @@ import os
 import numpy as np
 import visdom
 
-from hp_search import RESULTS_PATH
+
+RESULTS_PATH = 'results'
 
 vis = visdom.Visdom()
 for name in os.listdir(RESULTS_PATH):
