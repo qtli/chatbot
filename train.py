@@ -1,11 +1,12 @@
+import random
 import time
 
 import torch
 from torch.autograd import Variable
 from torch.optim import SGD
 
-from data import pad_seqs
 from models import init_hidden
+from utils import pad_seqs
 
 
 def train_iters(model, train, val, batch_size, lr, iters, print_iters):
@@ -16,8 +17,8 @@ def train_iters(model, train, val, batch_size, lr, iters, print_iters):
 
     start_time = time.time()
     for i in xrange(1, iters + 1):
-        train_batch = [train.get_random_example() for _ in xrange(batch_size)]
-        val_batch = [val.get_random_example() for _ in xrange(batch_size)]
+        train_batch = [random.choice(train) for _ in xrange(batch_size)]
+        val_batch = [random.choice(val) for _ in xrange(batch_size)]
 
         train_loss = get_loss(model, train_batch)
         optimizer.zero_grad()
@@ -46,10 +47,10 @@ def train_iters(model, train, val, batch_size, lr, iters, print_iters):
 
 
 def get_loss(model, batch, inference_only=False):
-    answer_lens = [len(example['answer']) for example in batch]
+    answer_lens = [len(a) for _, a in batch]
 
-    questions = pad_seqs([example['question'] for example in batch])
-    answers = pad_seqs([example['answer'] for example in batch])
+    questions = pad_seqs([q for q, _ in batch])
+    answers = pad_seqs([a for _, a in batch])
 
     questions = Variable(torch.LongTensor(questions), volatile=inference_only).cuda()
     answers = Variable(torch.LongTensor(answers), volatile=inference_only).cuda()
