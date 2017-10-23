@@ -10,6 +10,8 @@ OUTPUT_PATH = 'data/processed/cornell.txt'
 
 ENCODING = 'ISO-8859-2'
 
+MAX_SEQ_LEN = 20
+MIN_SEQ_LEN = 1
 
 def get_cornell_data():
     data = []
@@ -48,6 +50,9 @@ def load_raw_data(file_path):
             yield line.strip().split(seperator)
 
 
+def filter_seq(seq):
+    return len(seq) < MIN_SEQ_LEN or len(seq) > MAX_SEQ_LEN
+
 def tokenize(text):
     return [word for word in word_tokenize(text.lower()) if not is_number(word)]
 
@@ -67,6 +72,9 @@ if __name__ == '__main__':
 
     print 'Tokenizing...'
     data = [(tokenize(q), tokenize(a)) for q, a in data]
+
+    print 'Filtering...'
+    data = [(q, a) for q, a in data if not filter_seq(q) and not filter_seq(a)]
 
     print 'Saving...'
     save_data(data, ENCODING, OUTPUT_PATH)
