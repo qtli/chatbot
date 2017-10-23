@@ -1,11 +1,7 @@
 import random
-from collections import Counter
 from itertools import chain
 
-PAD_LABEL = 0
-UNK_LABEL = 1
-SOS_LABEL = 2
-EOS_LABEL = 3
+from vocab import PAD_LABEL
 
 
 # TODO: update chat function
@@ -58,30 +54,6 @@ def split_data(data, train_percent=.6, val_percent=.2):
     num_val = int(val_percent * num_examples)
 
     return data[:num_train], data[num_train:num_train + num_val], data[num_train + num_val:]
-
-
-def build_vocabulary(data, vocab_size):
-    counts = Counter()
-    for line in chain.from_iterable(data):
-        counts.update(line)
-
-    num_special_labels = 4
-    most_common = [token for token, _ in counts.most_common(vocab_size - num_special_labels)]
-    return {token: i + num_special_labels for i, token in enumerate(most_common)}
-
-
-def label_encode(data, vocab):
-    result = []
-    for q, a in data:
-        q = [vocab[token] if token in vocab else UNK_LABEL for token in q]
-        q.append(EOS_LABEL)
-
-        a = [SOS_LABEL] + [vocab[token] if token in vocab else UNK_LABEL for token in a]
-        a.append(EOS_LABEL)
-
-        encoded_pair = (q, a)
-        result.append(encoded_pair)
-    return result
 
 
 def save_data(data, encoding, file_path):
