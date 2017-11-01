@@ -4,14 +4,19 @@ import os
 from nltk import word_tokenize
 
 from utils import save_data
+from utils import split_data
 
 CORPUS_PATH = 'data/cornell movie-dialogs corpus'
-OUTPUT_PATH = 'data/processed/cornell.txt'
+PROCESSED_PATH = 'data/processed/'
+TRAIN_PATH = os.path.join(PROCESSED_PATH, 'cornell_train.txt')
+VAL_PATH = os.path.join(PROCESSED_PATH, 'cornell_val.txt')
+TEST_PATH = os.path.join(PROCESSED_PATH, 'cornell_test.txt')
 
 ENCODING = 'ISO-8859-2'
 
 MAX_SEQ_LEN = 20
 MIN_SEQ_LEN = 1
+
 
 def get_cornell_data():
     data = []
@@ -53,6 +58,7 @@ def load_raw_data(file_path):
 def filter_seq(seq):
     return len(seq) < MIN_SEQ_LEN or len(seq) > MAX_SEQ_LEN
 
+
 def tokenize(text):
     return [word for word in word_tokenize(text.lower()) if not is_number(word)]
 
@@ -77,4 +83,7 @@ if __name__ == '__main__':
     data = [(q, a) for q, a in data if not filter_seq(q) and not filter_seq(a)]
 
     print 'Saving...'
-    save_data(data, ENCODING, OUTPUT_PATH)
+    train, val, test = split_data(data)
+    save_data(train, ENCODING, TRAIN_PATH)
+    save_data(val, ENCODING, VAL_PATH)
+    save_data(test, ENCODING, TEST_PATH)
