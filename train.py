@@ -3,15 +3,12 @@ import time
 
 import torch
 from torch.autograd import Variable
-from torch.optim import SGD
 
 from models import init_hidden
 from utils import pad_seqs
 
 
-def train_iters(model, train, val, batch_size, lr, iters, print_iters):
-    optimizer = SGD(model.parameters(), lr=lr)
-
+def train_iters(model, train, val, batch_size, optimizer, iters, print_iters):
     train_losses = []
     val_losses = []
 
