@@ -14,7 +14,7 @@ def chat(input_text, tokenizer, model, vocab, max_output_len=25):
     output = [vocab.SOS_LABEL]
 
     _, encoder_hidden = model.encoder(input_text)
-    hidden = init_hidden(model.num_layers, 1, model.hidden_size)
+    hidden = init_hidden(model.num_layers, model.num_layers, model.hidden_size)
 
     prediction = vocab.SOS_LABEL
     while len(output) < max_output_len and prediction != vocab.EOS_LABEL:
